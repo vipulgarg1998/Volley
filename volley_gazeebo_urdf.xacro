@@ -1,0 +1,859 @@
+<?xml version="1.0" ?>
+
+<robot name="volley" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+	<xacro:macro name="transmission_block" params="joint_name">
+		<transmission name="tran1">
+			<type>transmission_interface/SimpleTransmission</type>
+			<joint name="${joint_name}">
+				<hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+			</joint>
+			<actuator name="motor1">
+				<mechanicalReduction>1</mechanicalReduction>
+			</actuator>
+		</transmission>
+	</xacro:macro>
+
+
+<!-- =================================================================================== -->
+  <xacro:include filename="$(find volley_arm)/urdf/wheel.urdf.xacro" /> 
+<!-- =================================================================================== -->
+
+
+<!-- Defining the colors used in this robot -->
+  <material name="Black">
+    <color rgba="0.0 0.0 0.0 1.0"/>
+  </material>
+
+  <material name="Red">
+    <color rgba="0.8 0.0 0.0 1.0"/>
+  </material>
+
+  <material name="White">
+    <color rgba="1.0 1.0 1.0 1.0"/>
+  </material>
+
+
+  <material name="Blue">
+    <color rgba="0.0 0.0 0.8 1.0"/>
+  </material>
+
+
+
+  <!-- PROPERTY LIST -->
+  <!--All units in m-kg-s-radians unit system -->
+  <property name="M_PI" value="3.1415926535897931" />
+  <property name="M_PI_2" value="1.570796327" />
+  <property name="deg_to_rad" value="0.017453293" />
+
+  <!-- Main body radius 0.15 and height -->
+  <!-- Main Body Cylinder base   -->
+  <property name="base_height" value="0.02" /> 
+  <property name="base_radius" value="0.4" /> 
+  <property name="base_mass" value="15" /> <!-- in kg-->
+
+
+
+  <!-- caster wheel radius and height -->
+  <!-- caster wheel mass -->
+  <property name="caster_f_height" value="0.04" /> 
+  <property name="caster_f_radius" value="0.025" /> 
+  <property name="caster_f_mass" value="0.5" /> <!-- in kg-->
+
+
+
+  <!-- caster wheel radius and height -->
+  <!-- caster wheel mass -->
+  <property name="caster_b_height" value="0.04" /> 
+  <property name="caster_b_radius" value="0.025" /> 
+  <property name="caster_b_mass" value="0.5" /> <!-- in kg-->
+
+
+
+
+  <!-- Wheels -->
+
+  <property name="wheel_mass" value="2.5" /> --> <!-- in kg-->
+  
+  <property name="base_x_origin_to_wheel_origin" value="0.25" />
+  <property name="base_y_origin_to_wheel_origin" value="0.8" />
+  <property name="base_z_origin_to_wheel_origin" value="0.0" />
+
+
+  <!-- Macro for calculating inertia of cylinder -->
+  <macro name="cylinder_inertia" params="m r h">
+    <inertia  ixx="${m*(3*r*r+h*h)/12}" ixy = "0" ixz = "0"
+              iyy="${m*(3*r*r+h*h)/12}" iyz = "0"
+              izz="${m*r*r/2}" /> 
+  </macro>
+
+
+  <!-- BASE-FOOTPRINT -->
+  <!-- base_footprint is a fictitious link(frame) that is on the ground right below base_link origin -->
+  <link name="base_footprint">
+    <inertial>
+      <mass value="0.0001" />
+      <origin xyz="0 0 0" />
+      <inertia ixx="0.0001" ixy="0.0" ixz="0.0"
+          iyy="0.0001" iyz="0.0" 
+          izz="0.0001" />
+    </inertial>
+    <visual>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+            <box size="0.001 0.001 0.001" />
+        </geometry>
+    </visual>
+  </link>
+
+  <gazebo reference="base_footprint">
+    <turnGravityOff>false</turnGravityOff>
+  </gazebo>
+
+  <joint name="base_footprint_joint" type="fixed">
+    <origin xyz="0 0 ${wheel_radius - base_z_origin_to_wheel_origin}" rpy="0 0 0" />
+    <parent link="base_footprint"/>
+    <child link="base_link" />
+  </joint>
+  
+  <!-- BASE-LINK -->
+  <!--Actual body/chassis of the robot-->
+  <link name="base_link">
+    <inertial>
+      <mass value="${base_mass}" />
+      <origin xyz="0 0 0" />
+      <!--The 3x3 rotational inertia matrix. -->
+        <cylinder_inertia  m="${base_mass}" r="${base_radius}" h="${base_height}" />
+
+    </inertial>    
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+
+
+          <cylinder length="${base_height}" radius="${base_radius}" />
+
+
+      </geometry>
+      <material name="White" />
+    </visual>  
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0 " />
+      <geometry>
+
+          <cylinder length="${base_height}" radius="${base_radius}" />
+
+      </geometry>
+    </collision>     
+  </link>
+  <gazebo reference="base_link">
+    <material>Gazebo/White</material>
+    <turnGravityOff>false</turnGravityOff>
+  </gazebo>
+  
+
+
+
+
+<!--Caster front  -->
+
+    <link name="caster_front_link">
+
+    <visual>
+      <origin xyz="0 0 0" rpy="${M_PI/2} 0 0" />
+      <geometry>
+	<sphere radius="${caster_f_radius}" />
+      </geometry>
+      <material name="Black" />
+    </visual>  
+
+
+
+      <collision>
+        <geometry>
+
+	<sphere radius="${caster_f_radius}" />
+
+        </geometry>
+      <origin xyz="0 0 0" rpy="${M_PI/2} 0 0" />
+      </collision>      
+      <inertial>
+        <mass value="${caster_f_mass}" />
+        <origin xyz="0 0 0" />
+        <inertia ixx="0.001" ixy="0.0" ixz="0.0"
+                 iyy="0.001" iyz="0.0" 
+                 izz="0.001" />
+      </inertial>
+    </link>
+
+
+
+ <joint name="caster_front_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="caster_front_link"/>
+      <origin xyz="0.35 0.0 -0.015" rpy="${-M_PI/2} 0 0"/>
+    </joint>
+
+
+  <gazebo reference="caster_front_link">
+    <turnGravityOff>false</turnGravityOff>
+  </gazebo>
+    
+
+
+<!--Caster back  -->
+
+    <link name="caster_back_link">
+
+    <visual>
+      <origin xyz="0 0 0 " rpy="${M_PI/2} 0 0" /> 
+
+      <geometry>
+
+
+	<sphere radius="${caster_b_radius}" />
+
+
+      </geometry>
+      <material name="Black" />
+    </visual>  
+
+
+
+      <collision>
+        <geometry>
+		<sphere radius="${caster_b_radius}" />
+        </geometry>
+      <origin xyz="0 0 0 " rpy="${M_PI/2} 0 0" /> 
+      </collision>      
+      <inertial>
+        <mass value="${caster_b_mass}" />
+        <origin xyz="0 0 0" />        
+        <inertia ixx="0.001" ixy="0.0" ixz="0.0"
+                 iyy="0.001" iyz="0.0" 
+                 izz="0.001" />
+      </inertial>
+    </link>
+
+    <joint name="caster_back_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="caster_back_link"/>
+      <origin xyz="-0.35 0.0 -0.015" rpy="${-M_PI/2} 0 0"/>
+    </joint>
+
+
+  <gazebo reference="caster_back_link">
+    <turnGravityOff>false</turnGravityOff>
+  </gazebo>
+
+
+<!-- Wheel Definitions -->
+
+  <wheel fb="front" lr="right" parent="base_link" translateX="0" translateY="0.5" flipY="1"/>
+  <wheel fb="front" lr="left" parent="base_link" translateX="0" translateY="-0.5" flipY="1"/>
+	 
+  <!-- Differential drive controller  -->
+  <gazebo>
+    <plugin name="differential_drive_controller" filename="libgazebo_ros_diff_drive.so">
+
+      <rosDebugLevel>Debug</rosDebugLevel>
+			<legacyMode>false</legacyMode>
+      <publishWheelTF>false</publishWheelTF>
+      <robotNamespace>/</robotNamespace>
+      <publishTf>1</publishTf>
+      <publishWheelJointState>false</publishWheelJointState>
+      <alwaysOn>true</alwaysOn>
+      <updateRate>100.0</updateRate>
+      <leftJoint>front_right_wheel_joint</leftJoint>
+      <rightJoint>front_left_wheel_joint</rightJoint>
+      <wheelSeparation>${2*base_radius}</wheelSeparation>
+      <wheelDiameter>${2*wheel_radius}</wheelDiameter>
+      <broadcastTF>1</broadcastTF>
+      <wheelTorque>30</wheelTorque>
+      <wheelAcceleration>1.8</wheelAcceleration>
+      <commandTopic>turtle1/cmd_vel</commandTopic>
+      <odometryFrame>odom</odometryFrame> 
+      <odometryTopic>odom</odometryTopic> 
+      <robotBaseFrame>base_footprint</robotBaseFrame>
+
+
+    </plugin>
+  </gazebo> 
+
+
+      <link name='torch'>
+
+        <pose frame=''>0 0 0 0 0 0</pose>
+          <collision name='collision'>
+            <geometry>
+              <cylinder length="0.1" radius="0.01"/>
+            </geometry>
+          </collision>
+          <visual name='visual'>
+            <geometry>
+              <cylinder length="0.1" radius="0.01"/>
+            </geometry>
+          </visual>
+      </link>
+
+  <joint name="torch_joint" type="fixed">
+      <origin xyz="0 0 0.82" rpy="0 1.57 0" />
+      <parent link="base_link"/>
+      <child link="torch"/><!-- 
+      <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-0.0175" soft_upper_limit="3.7525" />
+      <axis xyz="0 1 0" />
+      <limit effort="12" lower="-0.0175" upper="3.7525" velocity="2.6100" /> -->
+  </joint>
+
+ 	<xacro:include filename="$(find volley_arm)/urdf/xtion_pro_live.urdf.xacro"/>
+	<xacro:xtion_pro_live name="rgbd_camera" parent="fuddu">
+		<origin xyz="0 0 0" rpy="0 0 0"/>
+		<origin xyz="1 0 0" rpy="${-90.0 * deg_to_rad} 0 ${-90.0 * deg_to_rad}"/>
+  </xacro:xtion_pro_live>
+  <link name="fuddu_link">
+    <inertial>
+      <mass value="0.0001" />
+      <origin xyz="0 0 0" />
+      <inertia ixx="0.0001" ixy="0.0" ixz="0.0"
+          iyy="0.0001" iyz="0.0" 
+          izz="0.0001" />
+    </inertial>
+    <visual>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+            <box size="0.001 0.001 0.001" />
+        </geometry>
+    </visual>
+  </link>
+
+  <joint name="xtion_pro_joint" type="revolute">
+      <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-0.0175" soft_upper_limit="3.7525" />
+      <origin rpy="0 ${15* deg_to_rad} 0" xyz="0.4 0 1.6" />
+      <parent link="base_link" />
+      <child link="fuddu_link" />
+      <axis xyz="0 1 0" />
+      <limit effort="12" lower="-0.0175" upper="3.7525" velocity="2.6100" />
+  </joint>
+<!-- =================================================================================== -->
+<!-- 	<joint name="bottom_joint" type="fixed">
+		  <origin xyz="0.4 0.3 1.4" rpy="${90.0 * deg_to_rad} 0 ${-90.0 * deg_to_rad}" />
+		  <parent link="base_link"/>
+		  <child link="volley_link0"/>
+		</joint> -->
+  <joint name="bottom_joint" type="fixed">
+      <origin xyz="0.4 -0.31 1" rpy="0 ${-90.0 * deg_to_rad} ${-90.0 * deg_to_rad}" />
+      <parent link="base_link"/>
+      <child link="volley_link0"/>
+    </joint>
+
+
+<!--
+		<link name="bottom_link">
+
+		  <visual>
+		    <origin xyz=" 0 0 -0.04"  rpy="0 0 0"/>
+		    <geometry>
+
+			     <box size="1 1 0.02" />
+
+		    </geometry>
+		    <material name="Brown" />
+		  </visual>
+
+		  <collision>
+		    <origin xyz=" 0 0 -0.04"  rpy="0 0 0"/>
+		    <geometry>
+			     <box size="1 1 0.02" />
+		    </geometry>
+		    </collision>>
+
+		</link>
+
+		<gazebo reference="bottom_link">
+		  <material>Gazebo/White</material>
+		</gazebo>
+-->
+<!-- =================================================================================== -->
+<link
+    name="volley_link0">
+        <inertial>
+            <mass value="0.1" />
+            <inertia ixx="0.03" iyy="0.03" izz="0.03" ixy="0.0" ixz="0.0" iyz="0.0" />
+        </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://volley_arm/meshes/volley_link0.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.79216 0.81961 0.93333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://volley_arm/meshes/volley_link0.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="volley_link1">
+        <inertial>
+            <mass value="0.1" />
+            <inertia ixx="0.03" iyy="0.03" izz="0.03" ixy="0.0" ixz="0.0" iyz="0.0" />
+        </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://volley_arm/meshes/volley_link1.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://volley_arm/meshes/volley_link1.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="volley_joint1"
+    type="revolute">
+    <origin
+      xyz="0.10509 -0.18434 0.092801"
+      rpy="1.5708 0 0" />
+    <parent
+      link="volley_link0" />
+    <child
+      link="volley_link1" />
+    <axis
+      xyz="1 0 0" />
+    <limit effort="87" lower="-1.57" upper="1.57" velocity="2.1750" />
+  </joint>
+  <link
+    name="volley_link2">
+        <inertial>
+            <mass value="0.1" />
+            <inertia ixx="0.03" iyy="0.03" izz="0.03" ixy="0.0" ixz="0.0" iyz="0.0" />
+        </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://volley_arm/meshes/volley_link2.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://volley_arm/meshes/volley_link2.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="volley_joint2"
+    type="revolute">
+    <origin
+      xyz="0.148 0 0"
+      rpy="-0.17308 0.86698 -0.37058" />
+    <parent
+      link="volley_link1" />
+    <child
+      link="volley_link2" />
+    <axis
+      xyz="0 0.95585 -0.29384" />
+    <limit effort="87" lower="-1.57" upper="1.57" velocity="2.1750" />
+  </joint>
+  <link
+    name="volley_link3">
+        <inertial>
+            <mass value="0.1" />
+            <inertia ixx="0.03" iyy="0.03" izz="0.03" ixy="0.0" ixz="0.0" iyz="0.0" />
+        </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://volley_arm/meshes/volley_link3.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://volley_arm/meshes/volley_link3.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="volley_joint3"
+    type="revolute">
+    <origin
+      xyz="0.051015 0.04462 0.08389"
+      rpy="2.6923E-15 7.2164E-15 1.2143E-14" />
+    <parent
+      link="volley_link2" />
+    <child
+      link="volley_link3" />
+    <axis
+      xyz="0.47976 0.25782 0.83867" />
+    <limit effort="87" lower="-1.57" upper="1.57" velocity="2.1750" />
+  </joint>
+  <link
+    name="volley_link4">
+        <inertial>
+            <mass value="0.1" />
+            <inertia ixx="0.03" iyy="0.03" izz="0.03" ixy="0.0" ixz="0.0" iyz="0.0" />
+        </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://volley_arm/meshes/volley_link4.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://volley_arm/meshes/volley_link4.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="volley_joint4"
+    type="revolute">
+    <origin
+      xyz="0.043498 0.023375 0.076038"
+      rpy="0.59392 -0.88434 0.065068" />
+    <parent
+      link="volley_link3" />
+    <child
+      link="volley_link4" />
+    <axis
+      xyz="-0.1879 0.65936 -0.72797" />
+    <limit effort="87" lower="-1.57" upper="1.57" velocity="2.1750" />
+  </joint>
+  <link
+    name="volley_link5">
+        <inertial>
+            <mass value="0.1" />
+            <inertia ixx="0.03" iyy="0.03" izz="0.03" ixy="0.0" ixz="0.0" iyz="0.0" />
+        </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://volley_arm/meshes/volley_link5.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://volley_arm/meshes/volley_link5.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="volley_joint5"
+    type="revolute">
+    <origin
+      xyz="0.15388 -0.045901 -0.12772"
+      rpy="-0.53108 0.16075 0.10458" />
+    <parent
+      link="volley_link4" />
+    <child
+      link="volley_link5" />
+    <axis
+      xyz="-0.82409 0.16645 0.54145" />
+    <limit effort="87" lower="-1.57" upper="1.57" velocity="2.1750" />
+  </joint>
+  <link
+    name="volley_link6">
+        <inertial>
+            <mass value="0.1" />
+            <inertia ixx="0.03" iyy="0.03" izz="0.03" ixy="0.0" ixz="0.0" iyz="0.0" />
+        </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://volley_arm/meshes/volley_link6.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://volley_arm/meshes/volley_link6.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="volley_joint6"
+    type="revolute">
+    <origin
+      xyz="0.0094148 -0.0019016 -0.0061857"
+      rpy="-0.0080204 -0.080604 0.01377" />
+    <parent
+      link="volley_link5" />
+    <child
+      link="volley_link6" />
+    <axis
+      xyz="0.090866 0.98232 -0.16368" />
+    <limit effort="87" lower="-1.57" upper="1.57" velocity="2.1750" />
+  </joint>
+  <link
+    name="volley_link7">
+        <inertial>
+            <mass value="0.1" />
+            <inertia ixx="0.03" iyy="0.03" izz="0.03" ixy="0.0" ixz="0.0" iyz="0.0" />
+        </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://volley_arm/meshes/volley_link7.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://volley_arm/meshes/volley_link7.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="volley_joint7"
+    type="revolute">
+    <origin
+      xyz="0.020903 0.0086739 -0.14284"
+      rpy="-2.7594 -0.053542 -2.8665" />
+    <parent
+      link="volley_link6" />
+    <child
+      link="volley_link7" />
+    <axis
+      xyz="0.12681 -0.17443 -0.97647" />
+    <limit effort="87" lower="-1.57" upper="1.57" velocity="2.1750" />
+  </joint>
+
+  <link name="volley_link8" />
+    <joint name="volley_joint8" type="fixed">
+        <origin rpy="0 0 0" xyz="0 0 0" />
+        <parent link="volley_link7" />
+        <child link="volley_link8" />
+        <axis xyz="0 0 0" />
+    </joint>
+    <joint name="volley_hand_joint" type="fixed">
+        <parent link="volley_link8" />
+        <child link="volley_hand" />
+        <origin rpy="0 0 -0.785398163397" xyz="0 0 0" />
+    </joint>
+    <link name="volley_hand">
+        <visual>
+            <geometry>
+                <mesh filename="package://franka_description/meshes/visual/hand.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="package://franka_description/meshes/collision/hand.stl" />
+            </geometry>
+        </collision>
+        
+        <inertial>
+            <mass value="0.1" />
+            <inertia ixx="0.03" iyy="0.03" izz="0.03" ixy="0.0" ixz="0.0" iyz="0.0" />
+        </inertial>
+
+    </link>
+    <link name="volley_leftfinger">
+        <visual>
+            <geometry>
+                <mesh filename="package://franka_description/meshes/visual/finger.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="package://franka_description/meshes/collision/finger.stl" />
+            </geometry>
+        </collision>
+        
+        <inertial>
+            <mass value="0.1" />
+            <inertia ixx="0.03" iyy="0.03" izz="0.03" ixy="0.0" ixz="0.0" iyz="0.0" />
+        </inertial>
+
+    </link>
+    <link name="volley_rightfinger">
+        <visual>
+            <origin rpy="0 0 3.14159265359" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://franka_description/meshes/visual/finger.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <origin rpy="0 0 3.14159265359" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://franka_description/meshes/collision/finger.stl" />
+            </geometry>
+        </collision>
+        
+        <inertial>
+            <mass value="0.1" />
+            <inertia ixx="0.03" iyy="0.03" izz="0.03" ixy="0.0" ixz="0.0" iyz="0.0" />
+        </inertial>
+
+    </link>
+    <joint name="volley_finger_joint1" type="prismatic">
+        <parent link="volley_hand" />
+        <child link="volley_leftfinger" />
+        <origin rpy="0 0 0" xyz="0 0 0.0584" />
+        <axis xyz="0 1 0" />
+        <limit effort="20" lower="0.0" upper="0.04" velocity="0.2" />
+    </joint>
+    <joint name="volley_finger_joint2" type="prismatic">
+        <parent link="volley_hand" />
+        <child link="volley_rightfinger" />
+        <origin rpy="0 0 0" xyz="0 0 0.0584" />
+        <axis xyz="0 -1 0" />
+        <limit effort="20" lower="0.0" upper="0.04" velocity="0.2" />
+    </joint>
+ <!---->
+		<gazebo reference="volley_link0">
+		  <material>Gazebo/White</material>
+		</gazebo>
+		<gazebo reference="volley_link1">
+		  <material>Gazebo/White</material>
+		</gazebo>
+		<gazebo reference="volley_link2">
+		  <material>Gazebo/White</material>
+		</gazebo>
+		<gazebo reference="volley_link3">
+		  <material>Gazebo/White</material>
+		</gazebo>
+		<gazebo reference="volley_link4">
+		  <material>Gazebo/White</material>
+		</gazebo>
+		<gazebo reference="volley_link5">
+		  <material>Gazebo/White</material>
+		</gazebo>
+		<gazebo reference="volley_link6">
+		  <material>Gazebo/White</material>
+		</gazebo>
+		<gazebo reference="volley_link7">
+		  <material>Gazebo/White</material>
+		</gazebo>
+    <gazebo reference="volley_link8">
+      <material>Gazebo/White</material>
+    </gazebo>
+    <gazebo reference="volley_hand">
+      <material>Gazebo/White</material>
+    </gazebo>
+
+    <gazebo reference="volley_leftfinger">
+      <material>Gazebo/White</material>
+    </gazebo>
+
+    <gazebo reference="volley_rightfinger">
+      <material>Gazebo/White</material>
+    </gazebo>
+<!---->
+   <xacro:transmission_block joint_name="volley_joint1"/>
+   <xacro:transmission_block joint_name="volley_joint2"/>
+   <xacro:transmission_block joint_name="volley_joint3"/>
+   <xacro:transmission_block joint_name="volley_joint4"/>
+   <xacro:transmission_block joint_name="volley_joint5"/>
+   <xacro:transmission_block joint_name="volley_joint6"/>
+   <xacro:transmission_block joint_name="volley_joint7"/>
+   <xacro:transmission_block joint_name="volley_finger_joint1"/>
+   <xacro:transmission_block joint_name="volley_finger_joint2"/>
+
+	
+	<gazebo>
+		<plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+			<robotNamespace>/volley</robotNamespace>
+		  <!-- <robotSimType>gazebo_ros_control/DefaultRobotHWSim</robotSimType> -->
+		  <legacyModeNS>true</legacyModeNS>
+		</plugin>
+	</gazebo>
+<!---->
+</robot>
+
+
